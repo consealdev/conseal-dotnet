@@ -31,9 +31,11 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<SyncCursor>();
         services.TryAddScoped<IConsealSyncHooks, NullConsealSyncHooks>();
+        services.TryAddSingleton<BlobPlane>();
         services.TryAddScoped<SyncRequestHandler>();
+        services.TryAddScoped<BlobRequestHandler>();
         services.TryAddScoped<CircleRequestHandler>();
 
-        return new ConsealSyncBuilder(services);
+        return new ConsealSyncBuilder(services, configuration);
     }
 }

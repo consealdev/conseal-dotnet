@@ -14,8 +14,18 @@ jobs:
                 image: amazon/dynamodb-local:3.3.1
                 ports:
                     - 8000:8000
+            # The last release before LocalStack needed an auth token. S3 alone, checking every signature, so the
+            # tests see a presigned upload of the wrong size refused.
+            localstack:
+                image: localstack/localstack:4.14.0
+                ports:
+                    - 4566:4566
+                env:
+                    SERVICES: s3
+                    S3_SKIP_SIGNATURE_VALIDATION: '0'
         env:
             CONSEAL_SYNC_DYNAMODB_URL: http://localhost:8000
+            CONSEAL_SYNC_S3_URL: http://localhost:4566
         steps:
             - uses: actions/checkout@v5
 
@@ -32,6 +42,15 @@ jobs:
 
             - name: Build
               run: dotnet build ConsealDev.ConsealSync.sln -c Release --no-restore
+
+            - name: Wait for LocalStack's S3
+              run: |
+                  for attempt in $(seq 1 30); do
+                      curl -sf http://localhost:4566/_localstack/health | grep -q '"s3": "\(available\|running\)"' && exit 0
+                      sleep 2
+                  done
+                  curl -s http://localhost:4566/_localstack/health
+                  exit 1
 
             - name: Test
               run: dotnet test ConsealDev.ConsealSync.sln -c Release --no-build

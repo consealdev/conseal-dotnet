@@ -16,6 +16,8 @@ internal static class ErrorCodes
     public const string RequestTooLarge = "request_too_large";
     public const string InvalidRecord = "invalid_record";
     public const string RecordTooLarge = "record_too_large";
+    public const string BlobsDisabled = "blobs_disabled";
+    public const string BlobTooLarge = "blob_too_large";
 
     public const string NoCircle = "no_circle";
     public const string CircleExists = "circle_exists";
