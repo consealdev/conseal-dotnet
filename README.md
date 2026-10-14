@@ -5,11 +5,11 @@
 stores and orders ciphertext it can't open; sealing, opening and merging run on the client, in
 [`conseal-sync-js`](https://github.com/consealdev/conseal-sync-js).
 
-It implements version 0.2.0 of the spec, `openapi.yaml` and `circle.yaml`, all but the blob routes.
+It implements version 0.2.0 of the spec, `openapi.yaml` and `circle.yaml`.
 
 | Route group | Mapped by | Serves |
 |---|---|---|
-| Sync | `MapConsealSyncRoutes("sync")` | `GET /` for the collections and limits, `GET` and `POST /{collectionId}` to pull and push |
+| Sync | `MapConsealSyncRoutes("sync")` | `GET /` for the collections and limits, `GET` and `POST /{collectionId}` to pull and push, and the blob routes under `/{collectionId}/{recordId}/blobs/{blobId}` |
 | Circle | `MapConsealCircleRoutes("circle")` | The AEK commitment, the devices and their wrapped AEKs, and the join ceremony |
 
 ## Install
@@ -34,6 +34,11 @@ builder.Services
     .AddConsealSync(builder.Configuration)
     .WithCollections("7f3a9c21", "b4e70118")     // the ids from the app's collection registry, never names
     .AddDynamoStores(o => o.TablePrefix = "myapp-")
+    .WithBlobs(o =>                               // optional: blobs for the collections named
+    {
+        o.BucketName = "myapp-blobs";
+        o.Collections.Add("7f3a9c21");
+    })
     .WithHooks<MyCircleNotifications>();          // optional
 
 var app = builder.Build();
@@ -60,6 +65,17 @@ From the `ConsealSync` section, checked at startup:
 | `MaxRequestBytes` | 5 MB | The largest push body, under AWS Lambda's 6 MB |
 
 A user id is at most 256 bytes: it is part of every storage key and cursor. A longer one answers `401`.
+
+With `WithBlobs`, from the `ConsealSync:Blobs` section too:
+
+| Key | Default | |
+|---|---|---|
+| `Collections` | `[]` | The ids of the collections that have blobs, each one of `ConsealSync:Collections`. At least one is needed |
+| `BucketName` | none | The S3 bucket that holds the blobs |
+| `KeyPrefix` | `""` | Put before every object key, when the bucket holds other things too |
+| `MaxBlobBytes` | 10 MiB | The largest sealed blob: its content plus 28 bytes of IV and tag. At most 5 GiB, one `PUT` |
+| `UrlLifetime` | 5 minutes | How long a presigned URL works, at most 7 days |
+| `ServiceUrl` | `""` | An S3-compatible endpoint for local development, such as LocalStack's; empty for AWS |
 
 ## Storage
 
@@ -88,10 +104,38 @@ local index also caps one user's collection at 10 GB.
 **Writes to one collection are serialized.** Concurrent writers retry on the counter; one that can't commit after 25
 attempts answers `503` with `Retry-After`.
 
+### Blobs
+
+Content too large for a record goes in a blob, which the client seals and moves straight to and from S3 through URLs
+the routes presign, so its bytes never pass through the app. `WithBlobs` turns the routes on for the collections it
+names; without it they answer `404 blobs_disabled` and the app needs no bucket. `GET /` gives each collection with
+blobs its `maxBlobBytes`, and null to the rest.
+
+| Route | Answers |
+|---|---|
+| `POST /{collectionId}/{recordId}/blobs/{blobId}` with `{"size": n}` | A URL to `PUT` exactly n bytes to. Over `MaxBlobBytes` answers `413 blob_too_large` |
+| `GET /{collectionId}/{recordId}/blobs/{blobId}` | A URL to `GET` the blob from. A missing blob is the storage's own `404` |
+| `DELETE /{collectionId}/{recordId}/blobs/{blobId}` | `204`, whether the blob was there or not |
+
+- **Keys.** `{KeyPrefix}{userId}/{collectionId}/{recordId}/{blobId}`, the user id escaped as a URI component, so a
+  record's blobs share a prefix.
+- **A tombstone deletes the record's blobs,** listing and deleting under its prefix after the tombstone is written.
+  When that fails, the push still succeeds and the failure is logged: a blob left behind costs storage, not privacy.
+- **Signature Version 4, with the size signed.** An upload URL signs `Content-Length`, so S3 refuses an upload of
+  any other size. The AWS SDK presigns with version 2 in us-east-1 unless `AWSConfigsS3.UseSignatureVersion4` is set,
+  so the store sets it for the process.
+- **The client.** An `IAmazonS3` the app has registered already is used; otherwise one is made with the standard
+  AWS credential chain, or for an S3-compatible endpoint when `ServiceUrl` is set.
+- **The bucket.** Its CORS rules must let the app's origins `PUT` and `GET`. The role that presigns needs
+  `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject` and `s3:ListBucket` on the prefix; without `ListBucket`, S3
+  answers a missing blob with `403` rather than `404`. A lifecycle rule can delete what a client uploaded and never
+  pushed a record for, which the server can't tell apart from a blob in use.
+
 ### Other storage
 
 Implement `IConsealSyncRecordStore` and `IConsealCircleStore`, and register them in place of the DynamoDB ones. Their
-doc comments state what each must make atomic. `AddInMemoryStores()` is for tests.
+doc comments state what each must make atomic. `AddInMemoryStores()` is for tests. Blobs can go elsewhere through an
+`IConsealSyncBlobStore` registered after `WithBlobs`, as long as it presigns.
 
 ## Hooks
 
@@ -120,6 +164,15 @@ CONSEAL_SYNC_DYNAMODB_URL=http://localhost:8010 dotnet test ConsealDev.ConsealSy
 ```
 
 CI runs them against the same image.
+
+The S3 tests run when `CONSEAL_SYNC_S3_URL` names an S3-compatible endpoint that checks signatures, and are skipped
+otherwise. Each test makes a bucket of its own and deletes it afterwards. CI runs LocalStack 4.14.0, the last release
+before LocalStack needed an auth token:
+
+```sh
+docker run -d --rm --name conseal-sync-s3 -p 4566:4566 -e SERVICES=s3 -e S3_SKIP_SIGNATURE_VALIDATION=0 localstack/localstack:4.14.0
+CONSEAL_SYNC_S3_URL=http://localhost:4566 dotnet test ConsealDev.ConsealSync.sln
+```
 
 ## License
 
