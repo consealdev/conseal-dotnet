@@ -212,6 +212,51 @@ public sealed class CircleRoutesTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Authorizing_a_join_a_poll_found_expired_answers_410()
+    {
+        await CreateCircleAsync();
+        var challengeId = (await _client.PostAsync("/circle/joins", JoinRequest(Items.NewId()))).Body!["challengeId"]!.GetValue<string>();
+        _host.Time.Advance(TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(1));
+        var status = await _client.GetAsync($"/circle/joins/{challengeId}");
+
+        var authorized = await _client.PostAsync($"/circle/joins/{challengeId}/authorize", new { sealedAek = Sealed(), passphraseCheck = Sealed() });
+
+        status.Body!["status"]!.GetValue<string>().Should().Be("expired");
+        authorized.Status.Should().Be(HttpStatusCode.Gone);
+        authorized.Code.Should().Be("join_expired");
+    }
+
+    [Fact]
+    public async Task Saving_with_a_join_a_poll_found_expired_answers_410()
+    {
+        await CreateCircleAsync();
+        var joiner = Items.NewId();
+        var challengeId = await AuthorizedJoinAsync(joiner);
+        _host.Time.Advance(TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(1));
+        var status = await _client.GetAsync($"/circle/joins/{challengeId}");
+
+        var saved = await _client.PutAsync($"/circle/devices/{joiner}/wrapped-aek", new { wrappedAek = WrappedAek(), challengeId });
+
+        status.Body!["status"]!.GetValue<string>().Should().Be("expired");
+        saved.Status.Should().Be(HttpStatusCode.Gone);
+        saved.Code.Should().Be("join_expired");
+    }
+
+    [Fact]
+    public async Task Saving_with_a_join_nobody_decided_in_time_answers_410()
+    {
+        await CreateCircleAsync();
+        var joiner = Items.NewId();
+        var challengeId = (await _client.PostAsync("/circle/joins", JoinRequest(joiner))).Body!["challengeId"]!.GetValue<string>();
+        _host.Time.Advance(TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(1));
+
+        var saved = await _client.PutAsync($"/circle/devices/{joiner}/wrapped-aek", new { wrappedAek = WrappedAek(), challengeId });
+
+        saved.Status.Should().Be(HttpStatusCode.Gone);
+        saved.Code.Should().Be("join_expired");
+    }
+
+    [Fact]
     public async Task A_new_join_from_the_same_device_replaces_the_waiting_one()
     {
         await CreateCircleAsync();
