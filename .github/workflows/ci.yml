@@ -1,0 +1,37 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+jobs:
+    build-and-test:
+        name: Build & test
+        runs-on: ubuntu-24.04
+        services:
+            dynamodb:
+                image: amazon/dynamodb-local:3.3.1
+                ports:
+                    - 8000:8000
+        env:
+            CONSEAL_SYNC_DYNAMODB_URL: http://localhost:8000
+        steps:
+            - uses: actions/checkout@v5
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v5
+              with:
+                  dotnet-version: '10.x'
+
+            - name: Restore
+              run: dotnet restore ConsealDev.ConsealSync.sln
+
+            - name: Check formatting
+              run: dotnet format ConsealDev.ConsealSync.sln --verify-no-changes --no-restore
+
+            - name: Build
+              run: dotnet build ConsealDev.ConsealSync.sln -c Release --no-restore
+
+            - name: Test
+              run: dotnet test ConsealDev.ConsealSync.sln -c Release --no-build
