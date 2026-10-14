@@ -25,6 +25,12 @@ internal sealed class ConsealSyncOptionsValidator : IValidateOptions<ConsealSync
         {
             errors.Add($"ConsealSync collection id '{id}' is listed more than once.");
         }
+        if (options.Collections.Contains(ConsealSyncOptions.KeyringCollection))
+        {
+            errors.Add(
+                $"ConsealSync collection id '{ConsealSyncOptions.KeyringCollection}' is reserved for the user's identity, " +
+                "and the routes accept it without being configured with it.");
+        }
 
         if (!TryDecodeKey(options.CursorSigningKey, out var key) || key.Length < MinCursorKeyBytes)
         {

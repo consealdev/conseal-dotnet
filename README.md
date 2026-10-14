@@ -5,7 +5,7 @@
 stores and orders ciphertext it can't open; sealing, opening and merging run on the client, in
 [`conseal-sync-js`](https://github.com/consealdev/conseal-sync-js).
 
-It implements version 0.1.0 of the spec, `openapi.yaml` and `circle.yaml`, all but the blob routes.
+It implements version 0.2.0 of the spec, `openapi.yaml` and `circle.yaml`, all but the blob routes.
 
 | Route group | Mapped by | Serves |
 |---|---|---|
@@ -53,7 +53,7 @@ From the `ConsealSync` section, checked at startup:
 | Key | Default | |
 |---|---|---|
 | `CursorSigningKey` | none | Base64 of at least 32 random bytes (`openssl rand -base64 32`). Signs pull cursors; changing it sends clients back to the start |
-| `Collections` | `[]` | Collection ids, beside those from `WithCollections`. At least one is needed |
+| `Collections` | `[]` | Collection ids, beside those from `WithCollections`. At least one is needed. The spec reserves `keyring`, for the user's identity: the routes always accept it, and it can't be configured |
 | `UserIdClaim` | `sub` | The claim holding the user's id. With `sub`, `NameIdentifier` is read when `sub` is absent |
 | `MaxBatchItems` | `100` | The most items one push carries |
 | `MaxPageItems` | `1000` | The most items one pull returns |
