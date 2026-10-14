@@ -195,14 +195,8 @@ internal sealed class CircleRequestHandler(
         if (RequestUser.Find(context, _options) is not { } userId) return ApiResults.Unauthenticated();
         if (!Ids.IsChallengeId(challengeId)) return InvalidChallengeId();
 
-        var join = await FindJoinAsync(userId, challengeId, context.RequestAborted).ConfigureAwait(false);
+        var join = await FindCurrentJoinAsync(userId, challengeId, context.RequestAborted).ConfigureAwait(false);
         if (join is null) return UnknownJoin();
-
-        if (join.State is (JoinState.Pending or JoinState.Authorized) && time.GetUtcNow() > join.ExpiresAt)
-        {
-            join = await ExpireAsync(userId, join, context.RequestAborted).ConfigureAwait(false);
-            if (join is null) return UnknownJoin();
-        }
 
         return join.State switch
         {
@@ -234,19 +228,13 @@ internal sealed class CircleRequestHandler(
         }
 
         var cancellationToken = context.RequestAborted;
-        var join = await FindJoinAsync(userId, challengeId, cancellationToken).ConfigureAwait(false);
+        var join = await FindCurrentJoinAsync(userId, challengeId, cancellationToken).ConfigureAwait(false);
         if (join is null) return UnknownJoin();
+        if (join.State == JoinState.Expired) return JoinExpired();
         if (join.State != JoinState.Pending) return JoinNotPending(join.State);
 
-        var now = time.GetUtcNow();
-        if (now > join.ExpiresAt)
-        {
-            await ExpireAsync(userId, join, cancellationToken).ConfigureAwait(false);
-            return JoinExpired();
-        }
-
         // A fresh five minutes for the new device to unseal the AEK and finish.
-        var authorized = join with { State = JoinState.Authorized, SealedAek = sealedAek, PassphraseCheck = passphraseCheck, ExpiresAt = now + JoinTtl };
+        var authorized = join with { State = JoinState.Authorized, SealedAek = sealedAek, PassphraseCheck = passphraseCheck, ExpiresAt = time.GetUtcNow() + JoinTtl };
         if (!await store.ReplaceJoinAsync(userId, authorized, JoinState.Pending, cancellationToken).ConfigureAwait(false))
         {
             return Conflict(ErrorCodes.JoinNotPending, "The join request was decided at the same time.");
@@ -274,20 +262,16 @@ internal sealed class CircleRequestHandler(
     /// <summary>Uses up the join a device names as it saves its wrapped AEK; null once it is used, else the refusal.</summary>
     private async Task<IResult?> ConsumeJoinAsync(string userId, string deviceId, string challengeId, CancellationToken cancellationToken)
     {
-        var join = await FindJoinAsync(userId, challengeId, cancellationToken).ConfigureAwait(false);
+        var join = await FindCurrentJoinAsync(userId, challengeId, cancellationToken).ConfigureAwait(false);
         if (join is null) return UnknownJoin();
         if (join.DeviceId != deviceId)
         {
             return ApiResults.Error(StatusCodes.Status403Forbidden, ErrorCodes.JoinMismatch, "The join request is for another device.");
         }
+        if (join.State == JoinState.Expired) return JoinExpired();
         if (join.State != JoinState.Authorized)
         {
             return Conflict(ErrorCodes.JoinNotAuthorized, "The join request isn't authorized.");
-        }
-        if (time.GetUtcNow() > join.ExpiresAt)
-        {
-            await ExpireAsync(userId, join, cancellationToken).ConfigureAwait(false);
-            return JoinExpired();
         }
 
         var completed = join with { State = JoinState.Completed, SealedAek = null, PassphraseCheck = null };
@@ -303,12 +287,18 @@ internal sealed class CircleRequestHandler(
         return join?.State == JoinState.Completed ? null : join;
     }
 
-    /// <summary>Marks a join request whose time ran out as expired, dropping any sealed AEK; returns it as it now stands.</summary>
-    private async Task<JoinChallenge?> ExpireAsync(string userId, JoinChallenge join, CancellationToken cancellationToken)
+    /// <summary>
+    /// A join request as it now stands: one whose time ran out is marked expired first, dropping any sealed AEK, so the
+    /// routes answer it the same whether or not a poll found it first.
+    /// </summary>
+    private async Task<JoinChallenge?> FindCurrentJoinAsync(string userId, string challengeId, CancellationToken cancellationToken)
     {
+        var join = await FindJoinAsync(userId, challengeId, cancellationToken).ConfigureAwait(false);
+        if (join is null || join.State is not (JoinState.Pending or JoinState.Authorized) || time.GetUtcNow() <= join.ExpiresAt) return join;
+
         var expired = join with { State = JoinState.Expired, SealedAek = null, PassphraseCheck = null };
         if (await store.ReplaceJoinAsync(userId, expired, join.State, cancellationToken).ConfigureAwait(false)) return expired;
-        return await FindJoinAsync(userId, join.ChallengeId, cancellationToken).ConfigureAwait(false);
+        return await FindJoinAsync(userId, challengeId, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<IResult> RevokedAsync(HttpContext context, string userId, string deviceId)
