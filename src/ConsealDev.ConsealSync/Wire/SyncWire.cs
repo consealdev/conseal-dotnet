@@ -38,4 +38,6 @@ internal static class SyncWire
     public sealed record Conflicted(string Id, int Status, Record? Current);
 
     public sealed record Rejected(string Id, int Status, ErrorBody Error);
+
+    public sealed record BlobUrl(string Url, string Method, IReadOnlyDictionary<string, string> Headers, DateTimeOffset ExpiresAt);
 }

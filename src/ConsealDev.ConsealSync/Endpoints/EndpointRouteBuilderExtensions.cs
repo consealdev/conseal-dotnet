@@ -11,8 +11,9 @@ public static class EndpointRouteBuilderExtensions
 {
     /// <summary>
     /// Maps the sync routes of <c>openapi.yaml</c> under <paramref name="prefix"/>: <c>GET /</c> for the collections
-    /// and limits, and <c>GET</c> and <c>POST /{collectionId}</c> to pull and push. Every route requires an
-    /// authenticated user, from the host app's own sign-in.
+    /// and limits, <c>GET</c> and <c>POST /{collectionId}</c> to pull and push, and the blob routes under
+    /// <c>/{collectionId}/{recordId}/blobs/{blobId}</c>, which answer <c>404 blobs_disabled</c> for a collection
+    /// without blobs. Every route requires an authenticated user, from the host app's own sign-in.
     /// </summary>
     /// <param name="app">The app's routes.</param>
     /// <param name="prefix">The route prefix, <c>sync</c> by default.</param>
@@ -28,6 +29,14 @@ public static class EndpointRouteBuilderExtensions
             handler.PullAsync(context, collectionId));
         group.MapPost("{collectionId}", (HttpContext context, string collectionId, SyncRequestHandler handler) =>
             handler.PushAsync(context, collectionId));
+
+        const string blob = "{collectionId}/{recordId}/blobs/{blobId}";
+        group.MapPost(blob, (HttpContext context, string collectionId, string recordId, string blobId, BlobRequestHandler handler) =>
+            handler.CreateUploadAsync(context, collectionId, recordId, blobId));
+        group.MapGet(blob, (HttpContext context, string collectionId, string recordId, string blobId, BlobRequestHandler handler) =>
+            handler.CreateDownloadAsync(context, collectionId, recordId, blobId));
+        group.MapDelete(blob, (HttpContext context, string collectionId, string recordId, string blobId, BlobRequestHandler handler) =>
+            handler.DeleteAsync(context, collectionId, recordId, blobId));
 
         return group;
     }

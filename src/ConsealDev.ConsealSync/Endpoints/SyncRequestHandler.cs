@@ -4,6 +4,7 @@ using ConsealDev.ConsealSync.Storage;
 using ConsealDev.ConsealSync.Sync;
 using ConsealDev.ConsealSync.Wire;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace ConsealDev.ConsealSync.Endpoints;
@@ -12,7 +13,9 @@ namespace ConsealDev.ConsealSync.Endpoints;
 internal sealed class SyncRequestHandler(
     IOptions<ConsealSyncOptions> options,
     IConsealSyncRecordStore store,
-    SyncCursor cursors)
+    SyncCursor cursors,
+    BlobPlane blobs,
+    ILogger<SyncRequestHandler> logger)
 {
     /// <summary>The page size when the client names none, as the contract defaults <c>limit</c>.</summary>
     private const int DefaultPageItems = 500;
@@ -27,7 +30,7 @@ internal sealed class SyncRequestHandler(
         if (RequestUser.Find(context, _options) is null) return ApiResults.Unauthenticated();
 
         var collections = _collections
-            .Select(id => new SyncWire.CollectionLimits(id, store.MaxRecordBytes, MaxBlobBytes: null))
+            .Select(id => new SyncWire.CollectionLimits(id, store.MaxRecordBytes, blobs.MaxBlobBytes(id)))
             .ToList();
         return ApiResults.Ok(new SyncWire.Config(collections, _options.MaxBatchItems, _options.MaxPageItems));
     }
@@ -107,6 +110,10 @@ internal sealed class SyncRequestHandler(
 
         var write = ((PushItem.Valid)item).Write;
         var outcome = await store.WriteAsync(userId, collectionId, write, cancellationToken).ConfigureAwait(false);
+        if (outcome is RecordWriteResult.Written && write.Content is null)
+        {
+            await DeleteBlobsAsync(userId, collectionId, write.Id, cancellationToken).ConfigureAwait(false);
+        }
         return outcome switch
         {
             RecordWriteResult.Written written => new SyncWire.Written(write.Id, StatusCodes.Status200OK, written.Version, written.Seq),
@@ -120,6 +127,23 @@ internal sealed class SyncRequestHandler(
                 new ErrorBody(ErrorCodes.RecordTooLarge, "The storage can't hold a record this large. Move content to a blob.")),
             _ => throw new InvalidOperationException($"The record store returned an unknown result, {outcome.GetType().Name}."),
         };
+    }
+
+    /// <summary>
+    /// Deletes a tombstoned record's blobs. A failure is logged rather than failing the push: the tombstone stands, and
+    /// a blob left behind is ciphertext that costs storage, not privacy.
+    /// </summary>
+    private async Task DeleteBlobsAsync(string userId, string collectionId, string recordId, CancellationToken cancellationToken)
+    {
+        if (blobs.StoreFor(collectionId) is not { } blobStore) return;
+        try
+        {
+            await blobStore.DeleteRecordBlobsAsync(userId, collectionId, recordId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "Deleting the blobs of a tombstoned record failed; they stay in storage.");
+        }
     }
 
     private static IResult UnknownCollection(string collectionId) =>
