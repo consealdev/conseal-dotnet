@@ -31,7 +31,7 @@ public sealed class SyncRoutesTests : IAsyncLifetime
 
         reply.Status.Should().Be(HttpStatusCode.OK);
         var collections = reply.Body!["collections"]!.AsArray();
-        collections.Select(c => c!["id"]!.GetValue<string>()).Should().Equal(TestHost.Notes, TestHost.Lists);
+        collections.Select(c => c!["id"]!.GetValue<string>()).Should().Equal("keyring", TestHost.Notes, TestHost.Lists);
         collections[0]!["maxRecordBytes"]!.GetValue<int>().Should().Be(DynamoRecordStore.RecordLimitBytes);
         collections[0]!.AsObject().ContainsKey("maxBlobBytes").Should().BeTrue();
         collections[0]!["maxBlobBytes"].Should().BeNull();
@@ -62,6 +62,20 @@ public sealed class SyncRoutesTests : IAsyncLifetime
         pull.Code.Should().Be("unknown_collection");
         push.Status.Should().Be(HttpStatusCode.NotFound);
         push.Code.Should().Be("unknown_collection");
+    }
+
+    [Fact]
+    public async Task The_keyring_is_accepted_without_being_configured()
+    {
+        const string keyringRecord = "00000000-0000-4000-8000-000000000000";
+
+        var push = await _client.PostAsync("/sync/keyring", Items.Push(Items.Write(keyringRecord, null)));
+        var again = await _client.PostAsync("/sync/keyring", Items.Push(Items.Write(keyringRecord, null)));
+        var pull = await _client.GetAsync("/sync/keyring");
+
+        push.Body!["results"]![0]!["status"]!.GetValue<int>().Should().Be(200);
+        again.Body!["results"]![0]!["status"]!.GetValue<int>().Should().Be(409);
+        IdsOf(pull.Body!).Should().Equal(keyringRecord);
     }
 
     [Fact]

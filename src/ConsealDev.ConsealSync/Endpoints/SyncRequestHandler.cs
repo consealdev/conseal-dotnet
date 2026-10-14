@@ -19,11 +19,14 @@ internal sealed class SyncRequestHandler(
 
     private readonly ConsealSyncOptions _options = options.Value;
 
+    /// <summary>The collections the routes accept: the keyring, which the spec reserves, and the app's.</summary>
+    private readonly IReadOnlyList<string> _collections = [ConsealSyncOptions.KeyringCollection, .. options.Value.Collections];
+
     public IResult GetConfig(HttpContext context)
     {
         if (RequestUser.Find(context, _options) is null) return ApiResults.Unauthenticated();
 
-        var collections = _options.Collections
+        var collections = _collections
             .Select(id => new SyncWire.CollectionLimits(id, store.MaxRecordBytes, MaxBlobBytes: null))
             .ToList();
         return ApiResults.Ok(new SyncWire.Config(collections, _options.MaxBatchItems, _options.MaxPageItems));
@@ -33,7 +36,7 @@ internal sealed class SyncRequestHandler(
     {
         var userId = RequestUser.Find(context, _options);
         if (userId is null) return ApiResults.Unauthenticated();
-        if (!_options.Collections.Contains(collectionId)) return UnknownCollection(collectionId);
+        if (!_collections.Contains(collectionId)) return UnknownCollection(collectionId);
 
         var query = context.Request.Query;
         var limit = DefaultPageItems;
@@ -71,7 +74,7 @@ internal sealed class SyncRequestHandler(
     {
         var userId = RequestUser.Find(context, _options);
         if (userId is null) return ApiResults.Unauthenticated();
-        if (!_options.Collections.Contains(collectionId)) return UnknownCollection(collectionId);
+        if (!_collections.Contains(collectionId)) return UnknownCollection(collectionId);
 
         var cancellationToken = context.RequestAborted;
         var body = await RequestBody.ReadAsync(context.Request, _options.MaxRequestBytes, cancellationToken).ConfigureAwait(false);

@@ -10,8 +10,15 @@ public sealed class ConsealSyncOptions
     public const string SectionName = "ConsealSync";
 
     /// <summary>
-    /// The collection ids the server accepts; any other answers <c>404 unknown_collection</c>. Each is an identifier
-    /// the app assigns, such as <c>7f3a9c21</c>, never the collection's name, matching <c>^[A-Za-z0-9_-]{1,64}$</c>.
+    /// The collection the spec reserves for the user's identity key pairs. The routes accept and list it without
+    /// being configured with it, and no app configures it.
+    /// </summary>
+    public const string KeyringCollection = "keyring";
+
+    /// <summary>
+    /// The collection ids the server accepts besides <see cref="KeyringCollection"/>; any other answers
+    /// <c>404 unknown_collection</c>. Each is an identifier the app assigns, such as <c>7f3a9c21</c>, never the
+    /// collection's name, matching <c>^[A-Za-z0-9_-]{1,64}$</c>.
     /// </summary>
     public List<string> Collections { get; set; } = [];
 

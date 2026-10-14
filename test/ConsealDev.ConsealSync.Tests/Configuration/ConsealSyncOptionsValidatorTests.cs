@@ -28,6 +28,7 @@ public sealed class ConsealSyncOptionsValidatorTests
         { "a collection name", o => o.Collections.Add("my notes"), "'my notes'" },
         { "a collection id with a trailing newline", o => o.Collections.Add("7f3a9c22\n"), "doesn't match" },
         { "a collection listed twice", o => o.Collections.Add(TestHost.Notes), "more than once" },
+        { "the reserved keyring", o => o.Collections.Add("keyring"), "'keyring' is reserved" },
         { "no cursor key", o => o.CursorSigningKey = "", "CursorSigningKey" },
         { "a 31-byte cursor key", o => o.CursorSigningKey = Convert.ToBase64String(new byte[31]), "CursorSigningKey" },
         { "a cursor key that isn't base64", o => o.CursorSigningKey = "not base64 at all, not even close....", "CursorSigningKey" },
