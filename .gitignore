@@ -10,7 +10,7 @@ TestResults/
 .idea/
 *.user
 
-# Claude Code — per-machine permission state
+# Per-machine settings
 .claude/settings.local.json
 
 # OS
