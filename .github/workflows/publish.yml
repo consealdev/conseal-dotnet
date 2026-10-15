@@ -1,0 +1,109 @@
+name: Publish to NuGet
+run-name: "${{ contains(github.ref_name, '-') && format('Release candidate {0}', github.ref_name) || format('Publish {0} to NuGet', github.ref_name) }}"
+
+# Two kinds of tag run through this workflow:
+#
+#   vX.Y.Z-rc.N   Release candidate. Runs the tests, packs the package and attaches
+#                 it to a GitHub pre-release. Nothing goes to NuGet.
+#
+#   vX.Y.Z        The release. Refuses to run unless a vX.Y.Z-rc.N tag points at the
+#                 same commit, then waits for the release environment's reviewer and
+#                 pushes the package to NuGet through trusted publishing.
+
+on:
+    push:
+        tags:
+            - 'v*'
+    workflow_dispatch:
+
+env:
+    PROJECT: src/ConsealDev.Conseal/ConsealDev.Conseal.csproj
+
+jobs:
+    # Release candidates only; job rc needs it, so it is skipped with it. A run started
+    # by hand from a branch whose name has a dash isn't one: only a tag is.
+    test:
+        name: Tests
+        if: ${{ github.ref_type == 'tag' && contains(github.ref_name, '-') }}
+        uses: ./.github/workflows/ci.yml
+
+    rc:
+        name: Publish release candidate
+        needs: test
+        runs-on: ubuntu-24.04
+        permissions:
+            contents: write   # create the pre-release
+        env:
+            TAG: ${{ github.ref_name }}
+        steps:
+            - uses: actions/checkout@v5
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v5
+              with:
+                  dotnet-version: '10.x'
+
+            # The same pack as the release's below, versioned as the candidate.
+            - name: Pack
+              run: dotnet pack "$PROJECT" -c Release -p:Version="${TAG#v}" -o nupkg
+
+            # The package NuGet would get. A pre-release is never GitHub's latest.
+            - name: Create pre-release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  gh release create "$TAG" nupkg/*.nupkg \
+                      --prerelease \
+                      --title "$TAG" \
+                      --notes "Release candidate for ${TAG%-rc.*}. Nothing from it is published to NuGet."
+
+    publish:
+        if: ${{ !contains(github.ref_name, '-') }}
+        runs-on: ubuntu-24.04
+        environment: release  # v* tags only; NuGet's trusted publishing policy names this environment
+        permissions:
+            contents: read
+            id-token: write
+        steps:
+            - uses: actions/checkout@v5
+
+            # A release must have had a release candidate on the same commit, so the run
+            # that publishes it is never the commit's first. Checked first, before the build.
+            # It proves an RC was cut, not that its run passed: check that before releasing.
+            - name: Require a release candidate
+              env:
+                  TAG: ${{ github.ref_name }}
+              run: |
+                  HEAD_SHA=$(git rev-parse HEAD)
+                  # Glob refspec: fetches every vX.Y.Z-rc.N tag; matching none is not an error.
+                  git fetch --no-tags --depth=1 origin "+refs/tags/${TAG}-rc.*:refs/tags/${TAG}-rc.*" || true
+                  FOUND=""
+                  for t in $(git tag -l "${TAG}-rc.*"); do
+                      if [ "$(git rev-parse "$t^{commit}")" = "$HEAD_SHA" ]; then FOUND="$t"; fi
+                  done
+                  if [ -z "$FOUND" ]; then
+                      echo "::error::No release candidate for $TAG on this commit ($HEAD_SHA). Delete this tag, push a ${TAG}-rc.N tag on this commit and check its run, then release $TAG."
+                      exit 1
+                  fi
+                  echo "Release candidate $FOUND is on this commit."
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v5
+              with:
+                  dotnet-version: '10.x'
+
+            - name: Pack
+              env:
+                  TAG: ${{ github.ref_name }}
+              run: dotnet pack "$PROJECT" -c Release -p:Version="${TAG#v}" -o nupkg
+
+            # A short-lived API key from nuget.org, issued for this repo, workflow and
+            # environment only. Requested last: it is valid for an hour.
+            - name: NuGet login
+              uses: NuGet/login@v1
+              id: login
+              with:
+                  user: ${{ secrets.NUGET_USER }}
+
+            - name: Push
+              run: dotnet nuget push nupkg/*.nupkg --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json
