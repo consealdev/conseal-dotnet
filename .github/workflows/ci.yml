@@ -35,13 +35,13 @@ jobs:
                   dotnet-version: '10.x'
 
             - name: Restore
-              run: dotnet restore ConsealDev.ConsealSync.sln
+              run: dotnet restore ConsealDev.Conseal.sln
 
             - name: Check formatting
-              run: dotnet format ConsealDev.ConsealSync.sln --verify-no-changes --no-restore
+              run: dotnet format ConsealDev.Conseal.sln --verify-no-changes --no-restore
 
             - name: Build
-              run: dotnet build ConsealDev.ConsealSync.sln -c Release --no-restore
+              run: dotnet build ConsealDev.Conseal.sln -c Release --no-restore
 
             - name: Wait for LocalStack's S3
               run: |
@@ -53,4 +53,4 @@ jobs:
                   exit 1
 
             - name: Test
-              run: dotnet test ConsealDev.ConsealSync.sln -c Release --no-build
+              run: dotnet test ConsealDev.Conseal.sln -c Release --no-build

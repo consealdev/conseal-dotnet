@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>ConsealDev.Conseal</PackageId>
+        <Version>0.1.0</Version>
+        <Authors>consealdev</Authors>
+        <Description>Encrypted sync backend for ASP.NET Core: the sync and circle routes of the Conseal Sync contract, over storage that only ever holds ciphertext. Pair with @consealdev/conseal/sync on the client.</Description>
+        <RepositoryUrl>https://github.com/consealdev/conseal-dotnet</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.513.3" />
+        <PackageReference Include="AWSSDK.S3" Version="3.7.511.8" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="ConsealDev.Conseal.Tests" />
+    </ItemGroup>
+
+</Project>
