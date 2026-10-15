@@ -1,9 +1,9 @@
-# conseal-sync-dotnet
+# conseal-dotnet
 
-`ConsealDev.ConsealSync`, the .NET backend for Conseal Sync: the sync and circle routes of
-[`conseal-sync-spec`](https://github.com/consealdev/conseal-sync-spec) for ASP.NET Core, over DynamoDB. The server
+`ConsealDev.Conseal`, the .NET backend for conseal's sync: the sync and circle routes of
+[conseal's spec](https://github.com/consealdev/conseal/tree/main/spec) for ASP.NET Core, over DynamoDB. The server
 stores and orders ciphertext it can't open; sealing, opening and merging run on the client, in
-[`conseal-sync-js`](https://github.com/consealdev/conseal-sync-js).
+[`@consealdev/conseal/sync`](https://github.com/consealdev/conseal-js).
 
 It implements version 0.2.0 of the spec, `openapi.yaml` and `circle.yaml`.
 
@@ -14,11 +14,11 @@ It implements version 0.2.0 of the spec, `openapi.yaml` and `circle.yaml`.
 
 ## Install
 
-Not published yet. Clone it into `src/sdk/conseal-sync-dotnet` inside the
-[`conseal-sync`](https://github.com/consealdev/conseal-sync) umbrella and reference it by `ProjectReference`:
+Not published yet. Clone it into `src/sdk/dotnet` inside the [`conseal`](https://github.com/consealdev/conseal)
+umbrella and reference it by `ProjectReference`:
 
 ```xml
-<ProjectReference Include="..\..\conseal-sync\src\sdk\conseal-sync-dotnet\src\ConsealDev.ConsealSync\ConsealDev.ConsealSync.csproj" />
+<ProjectReference Include="..\..\conseal\src\sdk\dotnet\src\ConsealDev.Conseal\ConsealDev.Conseal.csproj" />
 ```
 
 It targets .NET 10.
@@ -152,7 +152,7 @@ A hook that throws is logged, and the request still succeeds.
 ## Development
 
 ```sh
-dotnet test ConsealDev.ConsealSync.sln
+dotnet test ConsealDev.Conseal.sln
 ```
 
 The DynamoDB tests run when `CONSEAL_SYNC_DYNAMODB_URL` names a DynamoDB Local endpoint, and are skipped otherwise.
@@ -160,7 +160,7 @@ Each test creates tables under a prefix of its own and deletes them afterwards.
 
 ```sh
 docker run -d --rm --name conseal-sync-dynamodb -p 8010:8000 amazon/dynamodb-local:3.3.1
-CONSEAL_SYNC_DYNAMODB_URL=http://localhost:8010 dotnet test ConsealDev.ConsealSync.sln
+CONSEAL_SYNC_DYNAMODB_URL=http://localhost:8010 dotnet test ConsealDev.Conseal.sln
 ```
 
 CI runs them against the same image.
@@ -171,9 +171,9 @@ before LocalStack needed an auth token:
 
 ```sh
 docker run -d --rm --name conseal-sync-s3 -p 4566:4566 -e SERVICES=s3 -e S3_SKIP_SIGNATURE_VALIDATION=0 localstack/localstack:4.14.0
-CONSEAL_SYNC_S3_URL=http://localhost:4566 dotnet test ConsealDev.ConsealSync.sln
+CONSEAL_SYNC_S3_URL=http://localhost:4566 dotnet test ConsealDev.Conseal.sln
 ```
 
 ## License
 
-[MIT](LICENSE)
+Dual-licensed under [AGPL-3.0](LICENSE) and a [commercial license](COMMERCIAL-LICENSE.md).
