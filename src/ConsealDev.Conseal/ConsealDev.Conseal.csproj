@@ -2,14 +2,22 @@
 
     <PropertyGroup>
         <PackageId>ConsealDev.Conseal</PackageId>
-        <Version>0.1.0</Version>
+        <!-- A placeholder: publish.yml packs with the version of the tag. -->
+        <Version>0.0.0</Version>
         <Authors>consealdev</Authors>
         <Description>Encrypted sync backend for ASP.NET Core: the sync and circle routes of the Conseal Sync contract, over storage that only ever holds ciphertext. Pair with @consealdev/conseal/sync on the client.</Description>
+        <PackageTags>conseal;encryption;end-to-end;sync;aspnetcore;dynamodb</PackageTags>
+        <PackageProjectUrl>https://conseal.dev</PackageProjectUrl>
         <RepositoryUrl>https://github.com/consealdev/conseal-dotnet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../../README.md" Pack="true" PackagePath="/" />
+    </ItemGroup>
 
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
