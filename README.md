@@ -174,6 +174,11 @@ docker run -d --rm --name conseal-sync-s3 -p 4566:4566 -e SERVICES=s3 -e S3_SKIP
 CONSEAL_SYNC_S3_URL=http://localhost:4566 dotnet test ConsealDev.Conseal.sln
 ```
 
+## Issues
+
+Report bugs and request features at [github.com/consealdev/conseal/issues](https://github.com/consealdev/conseal/issues),
+the one tracker for conseal-js, conseal-dotnet and the spec. Pull requests are not accepted.
+
 ## License
 
 Dual-licensed under [AGPL-3.0](LICENSE) and a [commercial license](COMMERCIAL-LICENSE.md).
