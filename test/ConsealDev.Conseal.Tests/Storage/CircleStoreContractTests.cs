@@ -11,7 +11,7 @@ public abstract class CircleStoreContractTests
     private const string Commitment = "c29tZSBjb21taXRtZW50IG9mIDMyIGJ5dGVzIGxvbmc=";
     private const string WrappedAek = """{"wrappedKey":"AAAA","salt":"AAAA"}""";
 
-    private static readonly DateTimeOffset Now = new(2026, 10, 14, 12, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Now = TestTime.RealNow();
 
     [Fact]
     public async Task A_circle_is_created_once_with_its_founding_device()
