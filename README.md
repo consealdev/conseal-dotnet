@@ -14,11 +14,11 @@ It implements version 0.2.0 of the spec, `openapi.yaml` and `circle.yaml`.
 
 ## Install
 
-Not published yet. Clone it into `src/sdk/dotnet` inside the [`conseal`](https://github.com/consealdev/conseal)
+Not published yet. Clone it into `repos/conseal-dotnet` inside the [`conseal`](https://github.com/consealdev/conseal)
 umbrella and reference it by `ProjectReference`:
 
 ```xml
-<ProjectReference Include="..\..\conseal\src\sdk\dotnet\src\ConsealDev.Conseal\ConsealDev.Conseal.csproj" />
+<ProjectReference Include="..\..\conseal\repos\conseal-dotnet\src\ConsealDev.Conseal\ConsealDev.Conseal.csproj" />
 ```
 
 It targets .NET 10.
