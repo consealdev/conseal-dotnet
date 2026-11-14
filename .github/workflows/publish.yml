@@ -41,7 +41,7 @@ jobs:
             - name: Setup .NET
               uses: actions/setup-dotnet@v5
               with:
-                  dotnet-version: '10.x'
+                  global-json-file: global.json
 
             # The same pack as the release's below, versioned as the candidate.
             - name: Pack
@@ -90,7 +90,7 @@ jobs:
             - name: Setup .NET
               uses: actions/setup-dotnet@v5
               with:
-                  dotnet-version: '10.x'
+                  global-json-file: global.json
 
             - name: Pack
               env:
