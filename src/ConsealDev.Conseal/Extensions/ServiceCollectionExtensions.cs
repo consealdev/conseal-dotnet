@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 using ConsealDev.Conseal.Configuration;
 using ConsealDev.Conseal.Endpoints;
 using ConsealDev.Conseal.Hooks;

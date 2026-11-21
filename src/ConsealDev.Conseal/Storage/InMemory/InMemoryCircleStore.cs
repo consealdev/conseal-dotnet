@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 namespace ConsealDev.Conseal.Storage.InMemory;
 
 /// <summary>Circles in memory, for tests and local development. One lock makes each step atomic.</summary>

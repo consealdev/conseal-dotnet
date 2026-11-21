@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using ConsealDev.Conseal.Configuration;

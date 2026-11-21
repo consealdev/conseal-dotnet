@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 using System.Buffers.Text;
 using System.Security.Cryptography;
 using System.Text.Json;

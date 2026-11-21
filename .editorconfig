@@ -11,3 +11,8 @@ trim_trailing_whitespace = true
 [*.cs]
 csharp_style_namespace_declarations = file_scoped:warning
 dotnet_sort_system_directives_first = true
+
+# Every file under src/ starts with the license header. `dotnet format` adds it and CI checks it.
+[src/**.cs]
+file_header_template = SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+dotnet_diagnostic.IDE0073.severity = warning
