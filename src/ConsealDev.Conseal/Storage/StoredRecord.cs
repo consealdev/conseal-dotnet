@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 namespace ConsealDev.Conseal.Storage;
 
 /// <summary>A record as the server holds it, in its latest state.</summary>

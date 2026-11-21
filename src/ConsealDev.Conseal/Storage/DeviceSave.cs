@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 namespace ConsealDev.Conseal.Storage;
 
 /// <summary>A device's wrapped AEK to store, adding the device when the circle doesn't have it yet.</summary>

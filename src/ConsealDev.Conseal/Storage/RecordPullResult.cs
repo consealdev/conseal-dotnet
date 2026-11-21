@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 namespace ConsealDev.Conseal.Storage;
 
 /// <summary>What a pull read: a page of records, or nothing because the position is past every write.</summary>

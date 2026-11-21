@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 namespace ConsealDev.Conseal.Wire;
 
 /// <summary>A push body read: every item, or why the request as a whole fails.</summary>

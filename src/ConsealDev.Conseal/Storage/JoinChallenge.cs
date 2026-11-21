@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 namespace ConsealDev.Conseal.Storage;
 
 /// <summary>A join request, as the server holds it while the ceremony runs.</summary>

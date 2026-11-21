@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 namespace ConsealDev.Conseal.Storage;
 
 /// <summary>Where one blob lives: its user, collection and record, and its own id.</summary>

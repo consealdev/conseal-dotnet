@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 using Amazon.DynamoDBv2.Model;
 
 namespace ConsealDev.Conseal.Storage.Dynamo;

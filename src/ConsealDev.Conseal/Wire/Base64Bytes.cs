@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later OR LicenseRef-Commercial
+
 namespace ConsealDev.Conseal.Wire;
 
 /// <summary>Standard base64 with padding, as the contract carries binary values.</summary>

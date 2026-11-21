@@ -95,6 +95,6 @@ limits, the blob routes and the bucket they need, and the hooks.
 
 ---
 
-Licensed under the GNU Affero General Public License v3.0 or the Conseal Commercial License. See
+Licensed under the GNU Affero General Public License, version 3 or any later version, or the Conseal Commercial License. See
 [LICENSE](https://github.com/consealdev/conseal-dotnet/blob/main/LICENSE) and
 [COMMERCIAL-LICENSE.md](https://github.com/consealdev/conseal-dotnet/blob/main/COMMERCIAL-LICENSE.md) for full terms.
